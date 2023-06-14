@@ -1,0 +1,45 @@
+version: "3.9"
+
+volumes:
+  prometheus_data: {}
+
+networks:
+  internal:
+
+services:
+  invest_data:
+    container_name: invest_data
+    build: .
+    ports:
+      - 2112:2112
+    networks:
+      - internal
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.36.2
+    volumes:
+      - ./deploy/prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - 9090:9090
+    restart: always
+    networks:
+      - internal
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    restart: unless-stopped
+    volumes:
+      - ./deploy/grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/main.json
+    ports:
+     - 3000:3000
+    networks:
+      - internal
+
